@@ -1,24 +1,41 @@
+
+# app/database.py
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
 
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+# SQLite database URL (file will be created locally)
+
+
+# SQLAlchemy engine
+engine = create_engine(
+    DATABASE_URL, connect_args={"check_same_thread": False}  # Required for SQLite
+)
+
+# Session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Import models
-from app.models.profile_model import Base as ProfileBase
-from app.models.document_model import Base as DocumentBase
-from app.models.summary_model import Base as SummaryBase
-from app.models.qa_model import Base as QABase
-from app.models.embedding_model import Base as EmbeddingBase
+# Base class for models
+Base = declarative_base()
 
-# Create all tables
-ProfileBase.metadata.create_all(bind=engine)
-DocumentBase.metadata.create_all(bind=engine)
-SummaryBase.metadata.create_all(bind=engine)
-QABase.metadata.create_all(bind=engine)
-EmbeddingBase.metadata.create_all(bind=engine)
+# FastAPI dependency to get DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Initialize all tables
+# def init_db():
+#     import app.models.profile_model
+#     import app.models.document_model
+#     import app.models.summary_model
+#     import app.models.qa_model
+#     import app.models.embedding_model
+#     Base.metadata.create_all(bind=engine)
+
