@@ -1,7 +1,5 @@
 from sqlalchemy import Column, Integer, String, TIMESTAMP, func
-from sqlalchemy.orm import declarative_base
-
-Base = declarative_base()
+from app.database import Base
 
 class Profile(Base):
     __tablename__ = "profile"
