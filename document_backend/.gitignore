@@ -1,7 +1,27 @@
+# __pycache__/
+# *.pyc
+# .env
+# *.db
+# venv/
+# storage/
+# app/storage/
+
+
+
+
+
+# Ignore the virtual environment
+venv/
+.venv/
+env/
+
+# Ignore Python cache
 __pycache__/
 *.pyc
+
+# Ignore environment secrets and local database
 .env
 *.db
-venv/
+
+# Ignore storage but NOT the app folder itself
 storage/
-app/storage/
