@@ -1,15 +1,67 @@
-node_modules
+# node_modules
 
-# Environments
+# # Environments
+# .venv/
+# venv/
+# env/
+# ENV/
+
+# # Python cache
+# __pycache__/
+# *.pyc
+
+# # Distribution / build
+# dist/
+# build/
+
+
+
+
+
+
+
+
+
+
+# --- Frontend (Node.js) ---
+node_modules/
+dist/
+build/
+.DS_Store
+
+# --- Python Environments & Caches ---
 .venv/
 venv/
 env/
 ENV/
-
-# Python cache
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+.pytest_cache/
 
-# Distribution / build
-dist/
-build/
+# --- Local AI Models (GGUF & Assets) ---
+# We ignore these because they are several GBs in size
+models/assets/*.gguf
+models/assets/*.pt
+models/assets/*.onnx
+
+# --- Database & State (IMPORTANT) ---
+# Ignore the SQLite databases that store your document vectors and graph state
+*.db
+*.sqlite
+*.sqlite-journal
+
+# --- LangGraph & System ---
+.langgraph_api/
+.vscode/
+.idea/
+.env
+
+# --- Project Specific Logs ---
+*.log
+pip-log.txt
+.venv/
+__pycache__/
+*.gguf
+models/assets/*.gguf
+.env
