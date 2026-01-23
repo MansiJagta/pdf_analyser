@@ -95,26 +95,96 @@
 
 
 
-import os
-import sys # For flushing the output
+# import os
+# import sys # For flushing the output
 
+# from manager import app
+# import uuid
+
+# def run_debug():
+#     # Use a unique thread_id
+#     config = {"configurable": {"thread_id": "test_session_123"}}
+    
+#     # Ensure this matches your ACTUAL file name
+#     target_file = "sample.pdf" 
+    
+#     inputs = {
+#         "file_path": target_file,
+#         "persona": "cto",
+#         "raw_text": "",
+#         "layout_type": "",
+#         "summary": "",
+#         "vector_status": ""
+#     }
+
+#     display_name = os.path.basename(target_file).upper()
+#     print(f"🚀 Starting Debug Run for: {display_name}...", flush=True)
+    
+#     final_state = {}
+
+#     # Iterate through the graph steps
+#     for state in app.stream(inputs, config=config, stream_mode="values"):
+#         final_state = state # Capture every update
+        
+#         print("\n--- State Update ---", flush=True)
+        
+#         if state.get('raw_text'):
+#             print(f"📝 Text Extracted: {len(state['raw_text'])} characters", flush=True)
+#         if state.get('layout_type'):
+#             print(f"📄 Layout: {state['layout_type']}", flush=True)
+#         if state.get('vector_status'):
+#             print(f"🗄️ Vector Status: {state['vector_status']}", flush=True)
+#         if state.get('summary'):
+#             print(f"💡 Summary Ready!", flush=True)
+
+#     # DYNAMIC PRINTING OF FINAL SUMMARY
+#     print("\n" + "="*60, flush=True)
+#     print(f"📋 FINAL AI SUMMARY FOR: {display_name}", flush=True)
+#     print("="*60, flush=True)
+    
+#     # Access the final result from the captured state
+#     final_summary = final_state.get("summary")
+    
+#     if final_summary:
+#         print(final_summary, flush=True)
+#     else:
+#         print(f"❌ Error: No summary content was found in the final graph state.", flush=True)
+    
+#     print("="*60, flush=True)
+#     print(f"\n✅ {display_name} Run Finished Successfully.", flush=True)
+
+# if __name__ == "__main__":
+#     run_debug()
+
+
+
+
+
+
+import os
+import sys 
 from manager import app
 import uuid
 
 def run_debug():
-    # Use a unique thread_id
-    config = {"configurable": {"thread_id": "test_session_123"}}
+    # Use a unique thread_id for persistence
+    config = {"configurable": {"thread_id": f"test_session_{uuid.uuid4().hex[:6]}"}}
     
     # Ensure this matches your ACTUAL file name
     target_file = "sample.pdf" 
     
+    # --- UPDATED INPUTS TO MATCH NEW STATE ---
     inputs = {
         "file_path": target_file,
-        "persona": "student",
+        "persona": "cto",
+        "query": "Analyze this document and provide a technical architecture overview.",
         "raw_text": "",
         "layout_type": "",
         "summary": "",
-        "vector_status": ""
+        "vector_status": "",
+        "reflection_count": 0,    
+        "draft": "",             
+        "critique": ""           
     }
 
     display_name = os.path.basename(target_file).upper()
@@ -123,32 +193,59 @@ def run_debug():
     final_state = {}
 
     # Iterate through the graph steps
+    # stream_mode="values" gives us the full state after every node execution
     for state in app.stream(inputs, config=config, stream_mode="values"):
-        final_state = state # Capture every update
+        final_state = state 
         
-        print("\n--- State Update ---", flush=True)
+        print("\n" + "-"*30, flush=True)
+        print("--- State Update ---", flush=True)
         
-        if state.get('raw_text'):
-            print(f"📝 Text Extracted: {len(state['raw_text'])} characters", flush=True)
+        # 1. Track the Text Extraction
+        if state.get('raw_text') and len(state.get('raw_text', '')) > 0:
+             # We only print this once to keep the terminal clean
+             if not any(log.startswith("📝 Text Extracted") for log in sys.argv): 
+                print(f"📝 Text Extracted: {len(state['raw_text'])} characters", flush=True)
+             
         if state.get('layout_type'):
             print(f"📄 Layout: {state['layout_type']}", flush=True)
+            
         if state.get('vector_status'):
             print(f"🗄️ Vector Status: {state['vector_status']}", flush=True)
-        if state.get('summary'):
-            print(f"💡 Summary Ready!", flush=True)
 
-    # DYNAMIC PRINTING OF FINAL SUMMARY
+        # 2. Track the Reflector/Refiner Progress
+        if state.get('reflection_count'):
+            print(f"🔄 Reflection Loop: Iteration {state['reflection_count']}", flush=True)
+
+        # NEW: Print the DRAFT so you can see if the Refiner is making it better or worse
+        if state.get('draft'):
+            # Print first 200 chars of the current draft
+            preview = state['draft'][:200].replace('\n', ' ')
+            print(f"✍️  Current Draft Preview: {preview}...", flush=True)
+
+        if state.get('critique'):
+            print(f"🧐 Critic Feedback: {state['critique'][:100]}...", flush=True)
+
+        if state.get('summary'):
+            print(f"💡 Final Verified Summary Ready!", flush=True)
+
+    # --- FINAL OUTPUT PRINTING ---
     print("\n" + "="*60, flush=True)
     print(f"📋 FINAL AI SUMMARY FOR: {display_name}", flush=True)
     print("="*60, flush=True)
     
-    # Access the final result from the captured state
     final_summary = final_state.get("summary")
     
     if final_summary:
         print(final_summary, flush=True)
+        
+        # 3. Print the Correction History (The Automatic Feedback Loop results)
+        if final_state.get("errors"):
+            print("\n" + "-"*20, flush=True)
+            print("🛠️  AUTO-CORRECTION HISTORY:", flush=True)
+            for err in final_state["errors"]:
+                print(f"- {err}", flush=True)
     else:
-        print(f"❌ Error: No summary content was found in the final graph state.", flush=True)
+        print(f"❌ Error: No summary content was found. Check your LLM logs.", flush=True)
     
     print("="*60, flush=True)
     print(f"\n✅ {display_name} Run Finished Successfully.", flush=True)
