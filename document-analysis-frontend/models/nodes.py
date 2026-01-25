@@ -356,6 +356,7 @@ def node_generate_draft(state):
         f"You are operating as: {persona_prompt}\n"
         "TASK: Extract 3-5 specific technical facts from the content below.\n"
         "STRICT RULES:\n"
+        "please give me atleast 200 words summary as it can exceed also\n"
         "- Do NOT mention 'Acting Director' or 'CTO' roles.\n"
         "- Do NOT repeat the instructions.\n"
         "- Focus ONLY on system architecture and implementation.\n\n"
