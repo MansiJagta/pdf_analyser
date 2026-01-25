@@ -176,7 +176,7 @@ def run_debug():
     # --- UPDATED INPUTS TO MATCH NEW STATE ---
     inputs = {
         "file_path": target_file,
-        "persona": "cto",
+        "persona": "website_developer",
         "query": "Analyze this document and provide me the summary on the basis of the persona selected.",
         "raw_text": "",
         "layout_type": "",

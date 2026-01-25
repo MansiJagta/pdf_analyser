@@ -3,7 +3,7 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.sqlite import SqliteSaver
 from state_qa import QAState
 from nodes_qa import node_retrieve, node_answer, node_reflect_qa
-
+engine = LLMEngine(model_path="assets/llama-3.2-3B-Instruct-QA-Q4_K_M.gguf")
 # 1. Setup Local Persistence (Memory)
 conn = sqlite3.connect("qa_checkpoints.db", check_same_thread=False)
 memory = SqliteSaver(conn)

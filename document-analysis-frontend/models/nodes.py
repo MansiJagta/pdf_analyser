@@ -318,15 +318,14 @@
 
 
 
-
 # Import the tools directly
 from pdf_parser import extract_pdf_logic
 from embeddings import index_vector_logic
 from llm import LLMEngine
 from persona import PERSONAS
 
-# Initialize Engine once to save memory
-engine = LLMEngine(model_path="assets/smollm2.gguf")
+# Initialize Engine with Llama-3.2-3B-Instruct path
+engine = LLMEngine(model_path="assets/Llama-3.2-3B-Instruct-Q4_K_M.gguf")
 
 def node_extract_layout(state):
     print("--- NODE: EXTRACTING TEXT & LAYOUT ---")
@@ -342,34 +341,38 @@ def node_index_vectors(state):
     return {"vector_status": "completed"}
 
 def node_generate_draft(state):
-    """Generates the initial draft with a forced technical start."""
+    """Generates the initial draft using Llama-3.2 specific ChatML headers."""
     print(f"--- NODE: GENERATING DRAFT AS {state['persona'].upper()} ---")
     
     persona_key = state.get('persona', 'executive').lower()
     persona_prompt = PERSONAS.get(persona_key, "Summarize this document clearly.")
     
-    # Take a focused chunk of text
-    source_text = state.get('raw_text', '')[:3000]
+    # Grab context from extracted text
+    source_text = state.get('raw_text', '')[:4000]
     
-    # We add a 'Technical Summary:' starter to guide the LLM away from '1. CTO' loops
-    full_prompt = (
-        f"You are operating as: {persona_prompt}\n"
-        "TASK: Extract 3-5 specific technical facts from the content below.\n"
+    # Dynamic Temperature: Lower (0.1) for CTO/Architect, slightly higher for others
+    temp_map = {"cto": 0.1, "software_architect": 0.1, "product_manager": 0.3}
+    current_temp = temp_map.get(persona_key, 0.2)
+
+    # 1. System Prompt holds the PDF context and persona constraints
+    system_instructions = (
+        f"{persona_prompt}\n\n"
         "STRICT RULES:\n"
-        "please give me atleast 200 words summary as it can exceed also\n"
-        "- Do NOT mention 'Acting Director' or 'CTO' roles.\n"
-        "- Do NOT repeat the instructions.\n"
-        "- Focus ONLY on system architecture and implementation.\n\n"
-        f"CONTENT: {source_text}\n\n"
-        "TECHNICAL SUMMARY:"
+        "- Generate a comprehensive summary of at least 200 words.\n"
+        "- Focus strictly on architecture, implementation, and technical feasibility.\n"
+        "- DO NOT mention 'Acting Director' or internal instruction labels.\n\n"
+        f"DOCUMENT CONTENT:\n{source_text}"
     )
-    
+
+    # 2. User Query holds the specific task
+    user_query = "Provide a deep technical breakdown of the system architecture and its core modules."
+
     try:
-        # Use an empty query to let the prompt do the heavy lifting
-        draft = engine.generate("", full_prompt)
+        # Pass the temperature to the updated engine.generate method
+        draft = engine.generate(user_query, system_instructions, temperature=current_temp)
     except Exception as e:
         print(f"Error during generation: {e}")
-        draft = "Error: Could not generate draft."
+        draft = "Error: Could not generate draft. Ensure Llama-3.2 model is in assets/."
 
     return {
         "draft": draft, 
@@ -377,34 +380,36 @@ def node_generate_draft(state):
     }
 
 def node_reflect_critic(state):
-    """The Reflector Node: Binary check for accuracy/quality."""
+    """The Reflector Node: Binary check using the Instruct template."""
     print("--- NODE: REFLECTOR (CRITIC) ---")
     
     critic_prompt = (
-        "Evaluate the following text. If it is repetitive or contains role names like 'CTO' "
-        "instead of technical facts, say 'REWRITE'. Otherwise, say 'NO_ERRORS_FOUND'.\n"
-        f"TEXT: {state['draft']}"
+        "You are a technical editor. Review the following summary for accuracy and repetition. "
+        "If it repeats lines, lacks technical detail, or mentions persona names (like 'CTO'), "
+        "output ONLY the word 'REWRITE'. "
+        "If it is high-quality and correct, output ONLY 'NO_ERRORS_FOUND'."
     )
     
-    critique = engine.generate("Check summary quality", critic_prompt)
+    critique = engine.generate(f"TEXT TO CHECK: {state['draft']}", critic_prompt, temperature=0.1)
     return {"critique": critique}
 
 def node_refine_answer(state):
-    """Refines the answer while stripping common hallucination triggers."""
+    """Refines the answer using Llama-3.2's stronger reasoning capabilities."""
     print(f"--- NODE: REFINER - ITERATION {state.get('reflection_count')} ---")
     current_count = state.get('reflection_count', 1)
 
     persona_key = state.get('persona', 'executive').lower()
     persona_instruction = PERSONAS.get(persona_key)
 
-    system_prompt = (
+    system_instructions = (
         f"Role: {persona_instruction}\n"
-        "Task: Rewrite the draft to be more technical. Remove any mentions of 'Acting Director'.\n"
-        "STRICT RULES: Output ONLY the revised facts. No meta-talk or introductory filler."
+        "Task: Technical refinement. Remove any conversational filler or instruction leakage.\n"
+        "Do NOT remove any technical names, version numbers, or specific module names from the original draft unless they are explicitly identified as errors.\n"
+        "Output only the improved facts."
     )
 
     context_data = f"DRAFT: {state['draft']}\nCRITIQUE: {state['critique']}"
-    refined_draft = engine.generate(context_data, system_prompt)
+    refined_draft = engine.generate(context_data, system_instructions, temperature=0.1)
 
     return {
         "draft": refined_draft.strip(),
@@ -412,39 +417,31 @@ def node_refine_answer(state):
     }
 
 def node_finalize(state):
-    """Final cleaning node to remove loops and leaked instructions."""
-    print("--- NODE: FINALIZING & CLEANING SUMMARY ---")
+    """Final cleaning for professional formatting."""
+    print("--- NODE: FINALIZING & CLEANING ---")
     
     raw_text = state.get("draft", "")
     if not raw_text:
-        return {"summary": "Error: No draft content found."}
+        return {"summary": "Error: Finalization failed."}
 
-    # Extended list of garbage to catch CTO/Acting Director loops
-    forbidden = [
-        "Task:", "Constraint:", "Role:", "Rewrite", "Question:", 
-        "Rewritten Text:", "STRICT RULES:", "Note:", "Critique:",
-        "Acting Director", "Based on the persona"
-    ]
+    # Remove instruction noise that might leak from Llama-3.2
+    forbidden = ["Task:", "Constraint:", "Role:", "Rewrite", "OPTIONS:", "Acting Director"]
 
     lines = raw_text.split('\n')
-    seen = set()
     unique_lines = []
+    seen = set()
 
     for line in lines:
         stripped = line.strip()
-        if not stripped or len(stripped) < 10:
+        if not stripped or len(stripped) < 15: # Filter out short noise
             continue
             
-        # Stop the loop if the model starts repeating role descriptions
-        clean_key = stripped.lower()
-        if any(word.lower() in clean_key for word in forbidden):
+        if any(word.lower() in stripped.lower() for word in forbidden):
             continue
 
-        if clean_key not in seen:
+        if stripped.lower() not in seen:
             unique_lines.append(stripped)
-            seen.add(clean_key)
+            seen.add(stripped.lower())
 
-    # Join with double newlines for a professional look
-    final_summary = "\n\n".join(unique_lines[:10]) # Limit to 10 lines max
-
+    final_summary = "\n\n".join(unique_lines)
     return {"summary": final_summary}
