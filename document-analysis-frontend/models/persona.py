@@ -37,15 +37,15 @@
 
 PERSONAS = {
     # --- 🏢 EXECUTIVE & BUSINESS (Focus: Strategy & ROI) ---
-    "ceo": "Act as a CEO. Summarize the high-level strategy, business impact, and ROI. Use 3 professional bullet points. Avoid technical jargon.",
+    "ceo": "Act as a CEO. Summarize the high-level strategy, business impact, and ROI. Use 3 professional bullet points. Avoid technical jargon. please do not include repeatations",
     "product_manager": "Act as a Product Manager. Focus on features, user benefits, and the roadmap. Create a 'Key Value Propositions' list.",
     "marketing_director": "Act as a Marketing Director. Extract the unique selling points (USPs) and target audience. Write a 2-sentence 'Elevator Pitch'.",
-    "financial_analyst": "Act as a Financial Analyst. Extract cost structures, revenue projections, and market growth numbers into a summary table.",
+    "financial_analyst": "Act as a Financial Analyst. Extract cost structures, revenue projections, and market growth numbers into a summary table.please do not include repeatations",
     "operations_manager": "Act as an Operations Manager. Focus on workflow efficiency, resource allocation, and process improvements mentioned in the text.",
 
     # --- 💻 TECHNICAL & ENGINEERING (Focus: Architecture & Implementation) ---
     "cto": "Act as a CTO. Focus on the system architecture, scalability, and technical risks. List the top 3 architectural decisions.",
-    "software_architect": "Act as a Software Architect. Extract the tech stack (FastAPI, React, etc.), database schemas, and API integration details.",
+    "software_architect": "Act as a Software Architect. Extract: Frontend, Backend, AI Pipeline, and Storage. Use 1 bullet point for each. No full sentences.",
     "devops_engineer": "Act as a DevOps Engineer. Focus on deployment, CI/CD pipelines, security protocols, and infrastructure requirements.",
     "data_scientist": "Act as a Data Scientist. Summarize the data requirements, model performance metrics, and any ML/NLP methodologies used.",
     "qa_lead": "Act as a QA Lead. Identify potential bugs, edge cases, and testing requirements. Highlight any 'Bug-Fixing' metrics.",
@@ -64,5 +64,6 @@ PERSONAS = {
     "investigative_journalist": "Act as a Journalist. Look for contradictions, hidden facts, or 'unspoken' risks. Write a headline and a 3-point summary.",
     "hr_specialist": "Act as an HR Director. Summarize for team roles, culture fit, and workload insights. Identify who is responsible for which task.",
     "customer_success": "Act as a Customer Success Lead. Focus on customer pain points and how this solution solves them. List 3 common FAQs.",
-    "general_audience": "Act as a Generalist. Provide a cohesive, 1-paragraph summary that retains the main message but is clear and easy to read."
+    "general_audience": "Act as a Generalist. Provide a cohesive, 1-paragraph summary that retains the main message but is clear and easy to read.",
+    "website_developer":"Act as a website developer and give me the summary of this pdf which will include the tech stack needed for building this as for frontend , backend, database as well as AI, ML etc . Do not include the repeated text in that ",
 }

@@ -245,21 +245,23 @@ workflow.add_node("finalize", node_finalize)          # Finalizes 'summary' key
 workflow.add_edge(START, "parser")
 workflow.add_edge("parser", "indexer")
 workflow.add_edge("indexer", "generator")
-workflow.add_edge("generator", "reflector")
+#workflow.add_edge("generator", "reflector")
+workflow.add_edge("generator","finalize")
+
 
 # 6. The Feedback Loop (The "Sub-graph" Pattern)
 # This is where the if-else looping happens
-workflow.add_conditional_edges(
-    "reflector", 
-    should_continue, 
-    {
-        "refine": "refiner",   
-        "finalize": "finalize" 
-    }
-)
+# workflow.add_conditional_edges(
+#     "reflector", 
+#     should_continue, 
+#     {
+#         "refine": "refiner",   
+#         "finalize": "finalize" 
+#     }
+# )
 
-# Loop back from refiner to reflector for another audit
-workflow.add_edge("refiner", "reflector")
+# # Loop back from refiner to reflector for another audit
+# workflow.add_edge("refiner", "reflector")
 
 # Ensure finalize actually moves data to END
 workflow.add_edge("finalize", END)
