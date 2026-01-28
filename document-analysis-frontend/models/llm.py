@@ -152,22 +152,90 @@
 
 
 
+# from llama_cpp import Llama
+
+# class LLMEngine:
+#     def __init__(self, model_path="assets/Llama-3.2-3B-Instruct-Q4_K_M.gguf"):
+#         # Llama-3.2 3B requires a larger context window (n_ctx) for PDFs
+#         # We point directly to the new Llama-3.2 file path
+#         engine = LLMEngine(model_path="assets/Llama-3.2-3B-Instruct-Q4_K_M.gguf")
+#         self.llm = Llama(
+#             model_path=model_path,
+#             n_ctx=8192,         # Supports up to 128k, but 8k is safe for 8GB RAM
+#             n_gpu_layers=-1,    # Set to -1 to offload to GPU if available
+#             verbose=False
+#         )
+
+#     # def generate(self, user_query, system_prompt):
+#     #     # Llama-3.2 uses special header IDs for roles (ChatML-like format)
+#     #     prompt = (
+#     #         f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n"
+#     #         f"{system_prompt}<|eot_id|>"
+#     #         f"<|start_header_id|>user<|end_header_id|>\n\n"
+#     #         f"{user_query}<|eot_id|>"
+#     #         f"<|start_header_id|>assistant<|end_header_id|>\n\n"
+#     #     )
+        
+#     #     response = self.llm(
+#     #         prompt,
+#     #         max_tokens=512,
+#     #         # CRITICAL: These prevent the "20 times a day" repetition loops
+#     #         repeat_penalty=1.2,
+#     #         temperature=0.1,    # Keep it factual for a CTO
+#     #         # Stop tokens specific to Llama-3.2 family
+#     #         stop=["<|eot_id|>", "<|end_of_text|>", "Task:", "Constraint:"]
+#     #     )
+#     #     return response["choices"][0]["text"].strip()
+    
+#     def generate(self, user_query, system_prompt, temperature=0.1):
+
+#      prompt = (
+#         # f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n"
+#         f"{system_prompt}<|eot_id|>"
+#         f"<|start_header_id|>user<|end_header_id|>\n\n"
+#         f"{user_query}<|eot_id|>"
+#         f"<|start_header_id|>assistant<|end_header_id|>\n\n"
+#      )
+    
+#      response = self.llm(
+#         prompt,
+#         max_tokens=512,
+#         repeat_penalty=1.2,
+#         temperature=temperature, # Now dynamic based on the persona
+#         stop=["<|eot_id|>", "<|end_of_text|>", "Task:", "Constraint:"]
+#      )
+     
+#      return response["choices"][0]["text"].strip()
+    
+
+# MODEL_PATH = "assets/Llama-3.2-3B-Instruct-Q4_K_M.gguf"
+# engine = LLMEngine(model_path=MODEL_PATH)
+
+
+
+
+
+
+
+
 from llama_cpp import Llama
 
 class LLMEngine:
     def __init__(self, model_path="assets/Llama-3.2-3B-Instruct-Q4_K_M.gguf"):
-        # Llama-3.2 3B requires a larger context window (n_ctx) for PDFs
-        # We point directly to the new Llama-3.2 file path
-        engine = LLMEngine(model_path="assets/Llama-3.2-3B-Instruct-Q4_K_M.gguf")
+        # ✅ FIXED: Removed the line that called LLMEngine() inside here.
+        # Now it only initializes the actual Llama model once.
         self.llm = Llama(
             model_path=model_path,
-            n_ctx=8192,         # Supports up to 128k, but 8k is safe for 8GB RAM
-            n_gpu_layers=-1,    # Set to -1 to offload to GPU if available
-            verbose=False
+            n_threads=6,
+            n_ctx=8192,         # 8k context is stable for 8GB RAM
+            n_gpu_layers=-1,    # Offload to GPU if available
+            verbose=False,
+            cache=True,
+            n_batch=512
         )
 
-    # def generate(self, user_query, system_prompt):
-    #     # Llama-3.2 uses special header IDs for roles (ChatML-like format)
+    # def generate(self, user_query, system_prompt, temperature=0.1):
+    #     # Llama-3.2 uses special header IDs for roles
     #     prompt = (
     #         f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n"
     #         f"{system_prompt}<|eot_id|>"
@@ -179,29 +247,36 @@ class LLMEngine:
     #     response = self.llm(
     #         prompt,
     #         max_tokens=512,
-    #         # CRITICAL: These prevent the "20 times a day" repetition loops
     #         repeat_penalty=1.2,
-    #         temperature=0.1,    # Keep it factual for a CTO
-    #         # Stop tokens specific to Llama-3.2 family
+    #         temperature=temperature,
     #         stop=["<|eot_id|>", "<|end_of_text|>", "Task:", "Constraint:"]
     #     )
+        
     #     return response["choices"][0]["text"].strip()
-    
-    def generate(self, user_query, system_prompt, temperature=0.1):
 
-     prompt = (
-        # f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n"
-        f"{system_prompt}<|eot_id|>"
-        f"<|start_header_id|>user<|end_header_id|>\n\n"
-        f"{user_query}<|eot_id|>"
-        f"<|start_header_id|>assistant<|end_header_id|>\n\n"
-     )
-    
-     response = self.llm(
-        prompt,
-        max_tokens=512,
-        repeat_penalty=1.2,
-        temperature=temperature, # Now dynamic based on the persona
-        stop=["<|eot_id|>", "<|end_of_text|>", "Task:", "Constraint:"]
-     )
-     return response["choices"][0]["text"].strip()
+    def generate(self, user_query, system_prompt, temperature=0.1):
+        # REMOVED <|begin_of_text|> to fix the RuntimeWarning
+        prompt = (
+            f"<|start_header_id|>system<|end_header_id|>\n\n"
+            f"{system_prompt}<|eot_id|>"
+            f"<|start_header_id|>user<|end_header_id|>\n\n"
+            f"{user_query}<|eot_id|>"
+            f"<|start_header_id|>assistant<|end_header_id|>\n\n"
+        )
+        
+        # We also need to truncate context if it's too long to prevent the ValueError
+        # 6000 tokens is a safe limit for an 8k context window
+        response = self.llm(
+            prompt,
+            max_tokens=1024,
+            repeat_penalty=1.2,
+            temperature=temperature,
+            stop=["<|eot_id|>", "<|end_of_text|>"]
+        )
+        
+        return response["choices"][0]["text"].strip()
+
+# --- THE FIX: GLOBAL INITIALIZATION ---
+# This must be outside the class, at the very bottom, with ZERO indentation.
+MODEL_PATH = "assets/Llama-3.2-3B-Instruct-Q4_K_M.gguf"
+engine = LLMEngine(model_path=MODEL_PATH)
