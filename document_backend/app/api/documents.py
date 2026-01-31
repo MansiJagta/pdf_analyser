@@ -388,15 +388,75 @@ def delete_document(doc_id: int, db: Session = Depends(get_db)):
 # ==============================
 # Ask Question (AI placeholder)
 # ==============================
+# @router.post("/{doc_id}/ask")
+# def ask_question(
+#     doc_id: int,
+#     payload: dict = Body(...),
+#     db: Session = Depends(get_db)
+# ):
+#     question = payload.get("question")
+#     if not question:
+#         raise HTTPException(status_code=400, detail="Question required")
+
+#     doc = db.query(Document).filter(Document.id == doc_id).first()
+#     if not doc:
+#         raise HTTPException(status_code=404, detail="Document not found")
+
+#     answer = "AI pipeline not connected yet."
+
+#     qa = QA(
+#         document_id=doc.id,
+#         question=question,
+#         answer=answer
+#     )
+#     db.add(qa)
+#     db.commit()
+#     db.refresh(qa)
+
+#     return {
+#         "id": qa.id,
+#         "question": qa.question,
+#         "answer": qa.answer,
+#         "asked_at": str(qa.asked_at)
+#     }
+
+
+# # ==============================
+# # Q&A History
+# # ==============================
+# @router.get("/{doc_id}/history")
+# def get_qa_history(doc_id: int, db: Session = Depends(get_db)):
+#     history = (
+#         db.query(QA)
+#         .filter(QA.document_id == doc_id)
+#         .order_by(QA.asked_at)
+#         .all()
+#     )
+
+#     return {
+#         "count": len(history),
+#         "history": [
+#             {
+#                 "id": h.id,
+#                 "question": h.question,
+#                 "answer": h.answer,
+#                 "asked_at": str(h.asked_at)
+#             }
+#             for h in history
+#         ]
+#     }
+from pydantic import BaseModel
+
+class QuestionRequest(BaseModel):
+    question: str
+
 @router.post("/{doc_id}/ask")
 def ask_question(
     doc_id: int,
-    payload: dict = Body(...),
+    payload: QuestionRequest,
     db: Session = Depends(get_db)
 ):
-    question = payload.get("question")
-    if not question:
-        raise HTTPException(status_code=400, detail="Question required")
+    question = payload.question
 
     doc = db.query(Document).filter(Document.id == doc_id).first()
     if not doc:
@@ -418,32 +478,6 @@ def ask_question(
         "question": qa.question,
         "answer": qa.answer,
         "asked_at": str(qa.asked_at)
-    }
-
-
-# ==============================
-# Q&A History
-# ==============================
-@router.get("/{doc_id}/history")
-def get_qa_history(doc_id: int, db: Session = Depends(get_db)):
-    history = (
-        db.query(QA)
-        .filter(QA.document_id == doc_id)
-        .order_by(QA.asked_at)
-        .all()
-    )
-
-    return {
-        "count": len(history),
-        "history": [
-            {
-                "id": h.id,
-                "question": h.question,
-                "answer": h.answer,
-                "asked_at": str(h.asked_at)
-            }
-            for h in history
-        ]
     }
 
 

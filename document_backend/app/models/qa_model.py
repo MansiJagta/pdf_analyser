@@ -14,4 +14,4 @@ class QA(Base):
     model_used = Column(String, nullable=True)  # e.g., "E5-base-v2"
     asked_at = Column(TIMESTAMP, server_default=func.current_timestamp())
 
-    document = relationship("Document", backref="qa_entries")
+    document = relationship("Document", back_populates="qa_entries")

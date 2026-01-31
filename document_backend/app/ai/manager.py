@@ -305,8 +305,9 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.sqlite import SqliteSaver
 
 # Import your state definition and specialized nodes
-from state import GraphState
-from nodes import (
+# from state import GraphState
+from app.ai.state import GraphState
+from app.ai.nodes import (
     node_extract_layout, 
     node_index_vectors, 
     node_generate_draft, 

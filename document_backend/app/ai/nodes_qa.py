@@ -38,9 +38,9 @@
 
 
 
-from state_qa import QAState
-from embeddings import query_vector_logic 
-from llm import LLMEngine
+from app.ai.state_qa import QAState
+from app.ai.embeddings import query_vector_logic 
+from app.ai.llm import LLMEngine
 engine = LLMEngine(model_path="assets/llama-3.2-3B-Instruct-QA-Q4_K_M.gguf")
 
 def node_retrieve(state: QAState):

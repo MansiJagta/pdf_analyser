@@ -319,13 +319,13 @@
 
 
 # Import the tools directly
-from pdf_parser import extract_pdf_logic
-from embeddings import index_vector_logic
-from llm import LLMEngine
-from persona import PERSONAS
+from app.ai.pdf_parser import extract_pdf_logic
+from app.ai.embeddings import index_vector_logic
+from app.ai.llm import LLMEngine
+from app.ai.persona import PERSONAS
 
 # Initialize Engine with Llama-3.2-3B-Instruct path
-engine = LLMEngine(model_path="assets/Llama-3.2-3B-Instruct-Q4_K_M.gguf")
+#engine = LLMEngine(model_path="assets/Llama-3.2-3B-Instruct-Q4_K_M.gguf")
 
 def node_extract_layout(state):
     print("--- NODE: EXTRACTING TEXT & LAYOUT ---")
