@@ -1,6 +1,7 @@
 # app/db_init.py
 
-from app.database import Base, engine
+from app.database import engine
+from app.models.base import Base
 
 # IMPORTANT: Import ALL models so SQLAlchemy registers tables
 from app.models.profile_model import Profile
