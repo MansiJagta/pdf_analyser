@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, TIMESTAMP, func, Text
 from sqlalchemy.orm import relationship
-from app.database import Base
+from app.models.base import Base
+
 
 class Document(Base):
     __tablename__ = "document"
@@ -23,4 +24,4 @@ class Document(Base):
     upload_time = Column(TIMESTAMP, server_default=func.current_timestamp())
     last_processed = Column(TIMESTAMP, nullable=True)
 
-    profile = relationship("Profile", backref="documents")
+    profile = relationship("Profile")

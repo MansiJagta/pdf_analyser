@@ -1,0 +1,10 @@
+from app.models.profile_model import Profile
+
+def get_or_create_local_user(db):
+    user = db.query(Profile).first()
+    if not user:
+        user = Profile(username="local_user")
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    return user
