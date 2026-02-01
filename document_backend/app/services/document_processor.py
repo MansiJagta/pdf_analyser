@@ -1,7 +1,7 @@
 import os
 import logging
 from sqlalchemy.orm import Session
-from app.models.base import Document
+from app.models.document_model import Document
 from app.ai.manager import app as ai_app  # This is your LangGraph instance
 
 # Set up logging to track the processing steps in your terminal

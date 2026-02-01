@@ -244,7 +244,7 @@ from app.models.document_model import Document
 from app.models.qa_model import QA
 from app.utils.local_user import get_or_create_local_user
 from app.services.document_processor import process_document  # <-- processor hook
-
+from app.ai.llm import engine
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
 # Storage directory
@@ -385,89 +385,53 @@ def delete_document(doc_id: int, db: Session = Depends(get_db)):
     return {"message": "Document deleted", "document_id": doc_id}
 
 
-# ==============================
-# Ask Question (AI placeholder)
-# ==============================
-# @router.post("/{doc_id}/ask")
-# def ask_question(
-#     doc_id: int,
-#     payload: dict = Body(...),
-#     db: Session = Depends(get_db)
-# ):
-#     question = payload.get("question")
-#     if not question:
-#         raise HTTPException(status_code=400, detail="Question required")
 
-#     doc = db.query(Document).filter(Document.id == doc_id).first()
-#     if not doc:
-#         raise HTTPException(status_code=404, detail="Document not found")
-
-#     answer = "AI pipeline not connected yet."
-
-#     qa = QA(
-#         document_id=doc.id,
-#         question=question,
-#         answer=answer
-#     )
-#     db.add(qa)
-#     db.commit()
-#     db.refresh(qa)
-
-#     return {
-#         "id": qa.id,
-#         "question": qa.question,
-#         "answer": qa.answer,
-#         "asked_at": str(qa.asked_at)
-#     }
-
-
-# # ==============================
-# # Q&A History
-# # ==============================
-# @router.get("/{doc_id}/history")
-# def get_qa_history(doc_id: int, db: Session = Depends(get_db)):
-#     history = (
-#         db.query(QA)
-#         .filter(QA.document_id == doc_id)
-#         .order_by(QA.asked_at)
-#         .all()
-#     )
-
-#     return {
-#         "count": len(history),
-#         "history": [
-#             {
-#                 "id": h.id,
-#                 "question": h.question,
-#                 "answer": h.answer,
-#                 "asked_at": str(h.asked_at)
-#             }
-#             for h in history
-#         ]
-#     }
 from pydantic import BaseModel
 
 class QuestionRequest(BaseModel):
     question: str
 
 @router.post("/{doc_id}/ask")
-def ask_question(
-    doc_id: int,
-    payload: QuestionRequest,
+async def ask_question(
+    doc_id: int, 
+    payload: QuestionRequest, 
     db: Session = Depends(get_db)
 ):
-    question = payload.question
-
+    # 1. Fetch the document
     doc = db.query(Document).filter(Document.id == doc_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    answer = "AI pipeline not connected yet."
+    # 2. Prepare the AI prompt
+    # Since this is an offline analyzer, we use the doc.content_summary 
+    # as context for the Llama model.
+    context = doc.content_summary if doc.content_summary else "No summary available."
+    
+    system_prompt = (
+        "You are a helpful AI assistant. Use the following document context "
+        "to answer the user's question. If the answer isn't in the context, "
+        "say you don't know based on the document provided.\n\n"
+        f"Context: {context}"
+    )
 
+    # 3. Generate Answer using the Engine
+    # We use 'await' if you made the engine generate method async, 
+    # otherwise run it directly.
+    try:
+        answer = engine.generate(
+            user_query=payload.question,
+            system_prompt=system_prompt
+        )
+    except Exception as e:
+        print(f"❌ LLM Generation Error: {e}")
+        answer = "I'm sorry, I encountered an error while processing the model."
+
+    # 4. Save to QA history in Database
     qa = QA(
         document_id=doc.id,
-        question=question,
-        answer=answer
+        question=payload.question,
+        answer=answer,
+        asked_at=datetime.utcnow() # Ensure your QA model has this field
     )
     db.add(qa)
     db.commit()
