@@ -459,19 +459,21 @@ class LLMEngine:
         # Llama-3.2-3B is ~2.02GB (as seen in your 'Length' output)
         self.llm = Llama(
             model_path=model_path,
-            n_ctx=4096,         # Context size for 8GB RAM
+            n_ctx=1024,         # Context size for 8GB RAM
             n_gpu_layers=-1,    # Auto-detect GPU
             n_threads=4,        # Optimal for most CPUs
             verbose=False
+            n_batch=128,     # Smaller batches for 8GB RAM
+            offload_kqv=False
         )
 
     def generate(self, user_query, system_prompt, temperature=0.1):
         prompt = (
-            f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n"
-            f"{system_prompt}<|eot_id|>"
-            f"<|start_header_id|>user<|end_header_id|>\n\n"
-            f"{user_query}<|eot_id|>"
-            f"<|start_header_id|>assistant<|end_header_id|>\n\n"
+            f"<|start_header_id|>system<|end_header_id|>\n\n"
+        f"{system_prompt}<|eot_id|>"
+        f"<|start_header_id|>user<|end_header_id|>\n\n"
+        f"{user_query}<|eot_id|>"
+        f"<|start_header_id|>assistant<|end_header_id|>\n\n"
         )
         
         response = self.llm(
