@@ -302,7 +302,8 @@
 
 import sqlite3
 from langgraph.graph import StateGraph, START, END
-from langgraph.checkpoint.sqlite import SqliteSaver
+# from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.memory import MemorySaver
 
 # Import your state definition and specialized nodes
 # from state import GraphState
@@ -317,8 +318,10 @@ from app.ai.nodes import (
 )
 
 # 1. Setup Persistence (Checkpoints)
-conn = sqlite3.connect("checkpoints.db", check_same_thread=False)
-checkpointer = SqliteSaver(conn)
+# conn = sqlite3.connect("checkpoints.db", check_same_thread=False)
+# checkpointer = SqliteSaver(conn)
+# FIX: Use MemorySaver for async compatibility by default
+checkpointer = MemorySaver()
 
 # 2. Define the Routing Logic (If-Else)
 def should_continue(state: GraphState):
