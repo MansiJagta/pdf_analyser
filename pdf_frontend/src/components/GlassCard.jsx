@@ -8,7 +8,7 @@ export default function GlassCard({ children, className, hoverEffect = false, ..
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
             className={cn(
-                "glass-card p-6",
+                "cyber-card p-6",
                 !hoverEffect && "hover:transform-none hover:shadow-none hover:border-border-glass",
                 className
             )}

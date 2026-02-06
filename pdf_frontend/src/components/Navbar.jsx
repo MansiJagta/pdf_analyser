@@ -14,16 +14,16 @@ export default function Navbar() {
     ];
 
     return (
-        <nav className="sticky top-0 z-50 w-full border-b border-surface/50 bg-background/80 backdrop-blur-md">
+        <nav className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#0F172A]/80 backdrop-blur-xl">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
                     <Link to="/" className="flex items-center space-x-2 group">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-accent/20 group-hover:shadow-accent/40 transition-all duration-300">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-cyan-400 flex items-center justify-center shadow-[0_0_10px_rgba(59,130,246,0.5)] group-hover:scale-105 transition-all duration-300">
                             <FileText className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-lg font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-                            DocAnalyze AI
+                        <span className="text-lg font-bold text-white tracking-wide">
+                            CYBER<span className="text-blue-400">VAULT</span>
                         </span>
                     </Link>
 

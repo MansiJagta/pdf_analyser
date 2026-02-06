@@ -1,9 +1,17 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { Send, User, Bot, ArrowLeft } from "lucide-react";
+import { jsPDF } from "jspdf";
 import Button from "../components/Button";
 import { cn } from "../utils/cn";
 import { getDocument } from "../data/mock";
+
+const PERSONAS = [
+    { id: 'executive', name: 'Executive', icon: '👔' },
+    { id: 'technical', name: 'Technical', icon: '🛠️' },
+    { id: 'academic', name: 'Academic', icon: '🎓' },
+    { id: 'creative', name: 'Creative', icon: '🎨' }
+];
 
 // Chat Message Component
 function ChatMessage({ message }) {
@@ -39,16 +47,37 @@ function ChatMessage({ message }) {
 
 export default function AskQuestion() {
     const { id } = useParams();
-    const doc = getDocument(id);
+    // If no ID, use a generic "General Assistant" doc context
+    const doc = id ? getDocument(id) : { name: "General Assistant", id: "general", chatHistory: [] };
 
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [persona, setPersona] = useState(PERSONAS[0]);
     const messagesEndRef = useRef(null);
+
+    const handleExportPDF = () => {
+        const docPDF = new jsPDF();
+        docPDF.setFontSize(16);
+        docPDF.text(`Summary Report for ${doc?.name}`, 10, 10);
+        docPDF.setFontSize(12);
+        docPDF.text(`Persona: ${persona.name}`, 10, 20);
+
+        let y = 30;
+        messages.forEach((msg, i) => {
+            const role = msg.role === 'ai' ? 'AI' : 'User';
+            const text = `${role}: ${msg.content}`;
+            const splitText = docPDF.splitTextToSize(text, 180);
+            docPDF.text(splitText, 10, y);
+            y += (splitText.length * 7) + 5;
+        });
+
+        docPDF.save(`${doc?.name}_summary.pdf`);
+    };
 
     // Use mock history or default
     const [messages, setMessages] = useState(() => {
         if (doc?.chatHistory?.length) return doc.chatHistory;
-        return [{ id: 1, role: "ai", content: `Hello! I've analyzed ${doc?.name || 'the document'}. What would you like to know?` }];
+        return [{ id: 1, role: "ai", content: `Hello! I am ready to assist you as a **${persona.name}** expert. Ask me anything about ${doc?.name === 'General Assistant' ? 'your tasks' : doc?.name}.` }];
     });
 
     const scrollToBottom = () => {
@@ -59,7 +88,7 @@ export default function AskQuestion() {
         scrollToBottom();
     }, [messages]);
 
-    if (!doc) return <Navigate to="/dashboard" />;
+    // if (!doc) return <Navigate to="/dashboard" />; // Removed redirect to allow general chat
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -75,7 +104,9 @@ export default function AskQuestion() {
             const aiMsg = {
                 id: Date.now() + 1,
                 role: "ai",
-                content: "This is a simulated AI response based on the document context. In a real app, this would come from the backend API."
+                id: Date.now() + 1,
+                role: "ai",
+                content: `[${persona.name} Perspective]: Based on your query about ${doc.name}, here is a tailored response. In a real application, I would use the ${persona.name} system prompt to analyze the vector embeddings.`
             };
             setMessages(prev => [...prev, aiMsg]);
             setIsLoading(false);
@@ -85,17 +116,45 @@ export default function AskQuestion() {
     return (
         <div className="flex flex-col h-[calc(100vh-140px)] animate-fade-in">
             {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-surface/50 mb-4">
+            <div className="flex items-center justify-between pb-4 border-b border-surface/50 mb-4 px-4 pt-4">
                 <div className="flex items-center">
-                    <Link to={`/documents/${doc.id}`} className="mr-4 text-text-muted hover:text-white">
+                    <Link to={id ? `/documents/${id}` : "/dashboard"} className="mr-4 text-text-muted hover:text-white">
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div>
-                        <h1 className="text-xl font-bold text-white">Ask AI</h1>
-                        <p className="text-xs text-text-muted">Chatting with {doc.name}</p>
+                        <h1 className="text-xl font-bold text-white flex items-center gap-2">
+                            {doc.name}
+                            <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/30">
+                                {persona.name}
+                            </span>
+                        </h1>
+                        <p className="text-xs text-text-muted">AI Analysis Mode</p>
                     </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => setMessages([])}>Clear Chat</Button>
+
+                <div className="flex items-center gap-3">
+                    {/* Persona Selector */}
+                    <select
+                        className="bg-surface/50 border border-white/10 text-xs text-white rounded-lg px-2 py-1.5 focus:outline-none focus:border-blue-500"
+                        value={persona.id}
+                        onChange={(e) => {
+                            const p = PERSONAS.find(p => p.id === e.target.value);
+                            setPersona(p);
+                            // Optional: Reset chat or announce persona change
+                        }}
+                    >
+                        {PERSONAS.map(p => (
+                            <option key={p.id} value={p.id}>{p.icon} {p.name}</option>
+                        ))}
+                    </select>
+
+                    <Button variant="outline" size="sm" onClick={handleExportPDF} className="hidden md:flex">
+                        Export PDF
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setMessages([])} className="text-slate-400">
+                        Clear
+                    </Button>
+                </div>
             </div>
 
             {/* Messages Area */}

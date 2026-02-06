@@ -1,0 +1,17 @@
+# =========================
+# FastAPI Backend
+# =========================
+fastapi
+uvicorn[standard]
+
+# =========================
+# Database / ORM
+# =========================
+sqlalchemy
+pydantic
+pydantic-settings
+
+# =========================
+# File Uploads
+# =========================
+python-multipart

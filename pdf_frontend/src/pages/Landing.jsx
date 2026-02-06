@@ -10,7 +10,7 @@ export default function Landing() {
     const yParallax = useTransform(scrollY, [0, 500], [0, -100]);
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#0f1115] text-white selection:bg-cyan-500/30 overflow-x-hidden">
+        <div className="flex flex-col min-h-screen bg-transparent text-white selection:bg-blue-500/30 overflow-x-hidden">
 
             {/* 1. HERO SECTION (3D Floating) */}
             <section className="relative min-h-[100vh] flex flex-col justify-center items-center pt-20 overflow-hidden">
@@ -37,9 +37,9 @@ export default function Landing() {
                             <span className="text-sm font-medium text-slate-300">AI Logic Core v2.4</span>
                         </div>
 
-                        <h1 className="text-6xl md:text-7xl font-heading font-bold leading-tight tracking-tight">
-                            Understand Documents <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-500">Without Reading.</span>
+                        <h1 className="text-6xl md:text-7xl font-bold leading-tight tracking-tight">
+                            Unlock Data <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">Securely. Instantly.</span>
                         </h1>
 
                         <p className="text-xl text-slate-400 max-w-lg leading-relaxed">
@@ -47,14 +47,14 @@ export default function Landing() {
                         </p>
 
                         <div className="flex flex-wrap gap-4 pt-4">
-                            <Link to="/upload">
-                                <Button size="lg" className="h-14 px-8 text-lg bg-white text-black hover:bg-slate-200 border-0 shadow-[0_0_20px_rgba(255,255,255,0.2)] font-semibold transition-all hover:scale-105">
-                                    Start Analysis
+                            <Link to="/documents/chat">
+                                <Button size="lg" className="h-14 px-8 text-lg font-semibold shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all hover:scale-105">
+                                    Access Vault
                                     <ArrowRight className="ml-2 w-5 h-5" />
                                 </Button>
                             </Link>
-                            <Button variant="ghost" size="lg" className="h-14 px-8 text-lg text-slate-300 border border-white/10 hover:bg-white/5">
-                                Live Demo
+                            <Button variant="ghost" size="lg" className="h-14 px-8 text-lg text-slate-300 border border-white/10 hover:bg-white/5 hover:border-blue-500/50">
+                                System Demo
                             </Button>
                         </div>
 
@@ -96,8 +96,8 @@ export default function Landing() {
                                 transition={{ delay: i * 0.2 }}
                                 className="relative z-10 text-center group"
                             >
-                                <div className="w-24 h-24 mx-auto bg-[#181b21] rounded-2xl border border-white/10 flex items-center justify-center mb-8 shadow-xl group-hover:border-white/20 transition-colors relative overflow-hidden">
-                                    <div className={`absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
+                                <div className="w-24 h-24 mx-auto cyber-card flex items-center justify-center mb-8 hover:border-blue-500/50 hover:shadow-[0_0_20px_rgba(59,130,246,0.2)] transition-all relative overflow-hidden">
+                                    <div className={`absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
                                     <step.icon className={`w-10 h-10 ${step.color}`} />
                                 </div>
                                 <h3 className="text-2xl font-bold mb-4 text-white">{step.title}</h3>
@@ -129,7 +129,7 @@ export default function Landing() {
                                     </div>
                                 </div>
                                 <div className="p-4 bg-white/5 rounded-lg border border-white/5 text-sm text-slate-300 font-mono">
-                        > Analysis detected 3 high-priority clauses...
+                                    &gt; Analysis detected 3 high-priority clauses...
                                 </div>
                             </div>
                         </div>
@@ -207,7 +207,7 @@ function FloatingCardStack() {
                 <div className="absolute top-5 left-5 w-full h-full bg-[#181b21] border border-white/10 rounded-2xl shadow-2xl opacity-70 transform translate-z-[-25px] scale-95" />
 
                 {/* Front Card (Main) */}
-                <div className="absolute inset-0 bg-[#1e2229] border border-white/10 rounded-2xl shadow-2xl overflow-hidden transform translate-z-[20px]">
+                <div className="absolute inset-0 bg-[#0F172A] border border-blue-500/30 rounded-2xl shadow-[0_0_30px_rgba(59,130,246,0.15)] overflow-hidden transform translate-z-[20px]">
                     <div className="h-32 bg-gradient-to-b from-indigo-900/20 to-transparent p-6 relative">
                         <div className="w-12 h-12 rounded-xl bg-indigo-500 flex items-center justify-center shadow-lg mb-4">
                             <FileText className="w-6 h-6 text-white" />

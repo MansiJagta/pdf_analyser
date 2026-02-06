@@ -1,15 +1,34 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
-import { FileText, ArrowLeft, ShieldCheck, Zap, Maximize2 } from "lucide-react";
+import { FileText, ArrowLeft, ShieldCheck, Zap, Maximize2, Download, User } from "lucide-react";
 import Button from "../components/Button";
 import ChatInterface from "../components/ChatInterface";
 import { getDocument } from "../data/mock";
 import { motion, AnimatePresence } from "framer-motion";
+import { jsPDF } from "jspdf";
+
+const PERSONAS = [
+    { id: 'executive', name: 'Executive', icon: '👔' },
+    { id: 'technical', name: 'Technical', icon: '🛠️' },
+    { id: 'academic', name: 'Academic', icon: '🎓' },
+    { id: 'creative', name: 'Creative', icon: '🎨' }
+];
 
 export default function DocumentDetail() {
     const { id } = useParams();
     const doc = getDocument(id);
     const [showChat, setShowChat] = useState(doc?.status === "processed");
+    const [persona, setPersona] = useState(PERSONAS[0]);
+
+    const handleExportSummary = () => {
+        const docPDF = new jsPDF();
+        docPDF.setFontSize(16);
+        docPDF.text(`Executive Summary: ${doc?.name}`, 10, 10);
+        docPDF.setFontSize(12);
+        docPDF.text(`Persona: ${persona.name}`, 10, 20);
+        docPDF.text(doc?.summary || "No summary available.", 10, 30, { maxWidth: 180 });
+        docPDF.save(`${doc?.name}_summary.pdf`);
+    };
 
     if (!doc) return <Navigate to="/dashboard" />;
 
@@ -26,7 +45,11 @@ export default function DocumentDetail() {
                     <span className="flex items-center px-3 py-1 bg-[#181b21] rounded-full text-xs text-emerald-400 border border-white/5">
                         <ShieldCheck className="w-3 h-3 mr-1.5" /> Secure Session
                     </span>
-                    <Button variant="ghost" size="sm" icon={Maximize2} className="text-slate-400" />
+                    <Link to={`/documents/${id}/ask`}>
+                        <Button variant="ghost" size="sm" className="text-slate-400 hover:text-blue-400 hover:bg-blue-500/10">
+                            <Maximize2 className="w-4 h-4 mr-2" /> Start Analysis
+                        </Button>
+                    </Link>
                 </div>
             </div>
 
@@ -69,6 +92,28 @@ export default function DocumentDetail() {
                             <h3 className="font-bold text-white text-sm flex items-center">
                                 <Zap className="w-4 h-4 text-cyan-400 mr-2" /> AI Executive Summary
                             </h3>
+                            <div className="flex items-center gap-2">
+                                {/* Visible Persona Selector */}
+                                <div className="relative">
+                                    <select
+                                        className="bg-white text-black text-xs font-semibold rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer shadow-lg"
+                                        value={persona.id}
+                                        onChange={(e) => setPersona(PERSONAS.find(p => p.id === e.target.value))}
+                                    >
+                                        {PERSONAS.map(p => (
+                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                    <User className="absolute left-2 top-1.5 w-3.5 h-3.5 text-black/70 pointer-events-none" />
+                                </div>
+                                <button
+                                    onClick={handleExportSummary}
+                                    className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                                    title="Export Summary PDF"
+                                >
+                                    <Download className="w-4 h-4" />
+                                </button>
+                            </div>
                         </div>
 
                         <div className="p-6 text-slate-300 space-y-4 text-sm leading-relaxed overflow-y-auto">
@@ -91,7 +136,7 @@ export default function DocumentDetail() {
 
                 {/* RIGHT PANEL: Chat */}
                 <div className="lg:col-span-7 h-full flex flex-col">
-                    <ChatInterface docName={doc.name} />
+                    <ChatInterface docName={doc.name} selectedPersona={persona} />
                 </div>
 
             </div>

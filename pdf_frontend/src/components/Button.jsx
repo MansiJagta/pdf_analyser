@@ -10,10 +10,10 @@ export default function Button({
     ...props
 }) {
     const variants = {
-        primary: "bg-gradient-to-r from-primary to-accent text-white hover:shadow-lg hover:shadow-accent/25 hover:brightness-110 border border-transparent active:scale-[0.98]",
-        secondary: "bg-surface text-text hover:bg-surface-hover border border-text-muted/20 active:scale-[0.98]",
-        outline: "bg-transparent text-text border border-text-muted/40 hover:border-accent hover:text-accent active:scale-[0.98]",
-        ghost: "bg-transparent text-text-muted hover:text-white hover:bg-surface/50 active:scale-[0.98]",
+        primary: "bg-blue-500 text-white rounded-full shadow-[0_0_15px_rgba(59,130,246,0.5)] hover:bg-blue-400 hover:shadow-[0_0_25px_rgba(59,130,246,0.7)] border border-transparent active:scale-[0.98]",
+        secondary: "bg-[#0F172A] text-slate-300 border border-slate-700 hover:bg-slate-800 active:scale-[0.98]",
+        outline: "bg-transparent text-slate-300 border border-slate-700 hover:border-blue-500 hover:text-blue-400 active:scale-[0.98]",
+        ghost: "bg-transparent text-slate-400 hover:text-white hover:bg-white/5 active:scale-[0.98]",
         danger: "bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20 active:scale-[0.98]",
     };
 
@@ -26,7 +26,7 @@ export default function Button({
     return (
         <button
             className={cn(
-                "relative inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/50 disabled:opacity-50 disabled:cursor-not-allowed",
+                "relative inline-flex items-center justify-center font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed",
                 variants[variant],
                 sizes[size],
                 className
