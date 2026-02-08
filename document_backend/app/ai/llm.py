@@ -1,22 +1,13 @@
 import os
-import sys
+import llama_cpp
 from llama_cpp import Llama
 
-# ==============================
-# Robust Model Path Discovery
-# ==============================
 def find_model_path():
     """
-    Locates the Llama-3.2 GGUF file by checking common directories.
+    Locates the Llama-3.2 GGUF file.
     """
-    # 1. Check relative to this file
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    # Potential paths to check
-    # We want to find: assets/Llama-3.2-3B-Instruct-Q4_K_M.gguf
-    # It might be in document_backend/assets or document_backend/app/models/assets
-    
-    project_root = os.path.abspath(os.path.join(current_dir, "../../")) # document_backend/
+    project_root = os.path.abspath(os.path.join(current_dir, "../../"))
     
     candidates = [
         os.path.join(project_root, "app", "models", "assets", "Llama-3.2-3B-Instruct-Q4_K_M.gguf"),
@@ -27,68 +18,108 @@ def find_model_path():
     
     for path in candidates:
         if os.path.exists(path):
-            print(f"✅ Found model at: {path}")
+            print(f"Found model at: {path}")
             return path
             
-    print("❌ Model file not found in common locations.")
-    print(f"Checked: {candidates}")
-    # Return the most likely one to let Llama raise the specific error if it fails
-    return candidates[0]
-
-MODEL_PATH = find_model_path()
+    print("Model file not found in common locations.")
+    return None
 
 class LLMEngine:
-    def __init__(self, model_path=MODEL_PATH):
-        print(f"--- 🚀 INITIALIZING AI ENGINE ---")
-        print(f"Target Model: {model_path}")
-        
-        if not os.path.exists(model_path):
-            print(f"⚠️ WARNING: Model file does not exist at {model_path}")
-            # We don't raise here to allow the app to start, but AI will fail
-        
+    _instance = None
+
+    def __new__(cls):
+        """Singleton pattern to prevent RAM overflow from multiple loads."""
+        if cls._instance is None:
+            cls._instance = super(LLMEngine, cls).__new__(cls)
+            cls._instance.llm = None
+            cls._instance._initialize_model()
+        return cls._instance
+
+    def _initialize_model(self):
+        """Loads the model with strict 8GB RAM optimizations."""
+        model_path = find_model_path()
+        if not model_path:
+            return
+
         try:
-            # --- 8GB RAM OPTIMIZED CONFIGURATION ---
+            print(f"--- LOADING MEMORY-SAFE AI ENGINE ---")
             self.llm = Llama(
                 model_path=model_path,
-                n_ctx=2048,          # Reasonable context for 8GB RAM
-                n_gpu_layers=-1,     # Offload to GPU if available
-                n_threads=4,         # Good default for quad-core
-                n_batch=128,         # Smaller batch size for lower memory usage
-                verbose=False,
-                offload_kqv=False    # Keep KV cache on CPU if GPU is small
+                n_ctx=1024,              # 📉 Fixed context to stay within 8GB RAM
+                n_threads=2,             # 💻 Limit threads to stop 'ggml' fatal errors
+                n_batch=128,             # 🚀 Smaller batches reduce CPU/RAM spikes
+                use_mmap=False,          # ⚡ Faster allocation for Windows
+                type_k=llama_cpp.GGML_TYPE_I8, 
+                type_v=llama_cpp.GGML_TYPE_I8,
+                last_n_tokens_size=64,
+                verbose=False
             )
-            print("✅ AI Engine initialized successfully.")
+            print("--- AI ENGINE INITIALIZED SUCCESSFULLY ---")
         except Exception as e:
-            print(f"❌ Failed to initialize AI Engine: {e}")
+            print(f"--- CRITICAL AI LOAD FAILED: {e} ---")
             self.llm = None
 
-    def generate(self, user_query, system_prompt, temperature=0.1):
+    def _truncate_prompt(self, prompt, max_chars=3200):
+        """
+        Hard truncation to ensures prompt fits in 1024 context.
+        Approx 4 chars per token -> 3200 chars ~= 800 tokens.
+        Leaves ~200 tokens for generation.
+        """
+        if len(prompt) > max_chars:
+            return prompt[:max_chars]
+        return prompt
+
+    def stream(self, user_query, system_prompt, temperature=0.1):
+        """Yields tokens one by one. Limits output length to preserve RAM stability."""
         if not self.llm:
-            return "AI Engine is not available. Please check server logs."
+            yield "AI Engine is currently unavailable."
+            return
             
-        # Llama-3.2 / ChatML Format
-        # <|begin_of_text|> is often implicit or handled by the tokenizer, 
-        # but strict formatting helps.
-        prompt = (
+        prompt = self._format_prompt(user_query, system_prompt)
+        prompt = self._truncate_prompt(prompt)
+
+        try:
+            # We limit max_tokens to 256 to ensure generation stays within bounds
+            for chunk in self.llm(
+                prompt,
+                max_tokens=256,          
+                temperature=temperature,
+                stop=["<|eot_id|>", "<|end_of_text|>"],
+                stream=True 
+            ):
+                token = chunk["choices"][0]["text"]
+                if token:
+                    yield token
+        except Exception as e:
+            yield f"\n[Stream Error: {e}]"
+
+    def generate(self, user_query, system_prompt, temperature=0.1):
+        """Standard generation for summaries. Limits context to prevent crashes."""
+        if not self.llm: return "AI Engine unavailable."
+        
+        prompt = self._format_prompt(user_query, system_prompt)
+        prompt = self._truncate_prompt(prompt)
+
+        try:
+            response = self.llm(
+                prompt,
+                max_tokens=300,          # 📉 Conservative generation length
+                temperature=temperature,
+                stop=["<|eot_id|>", "<|end_of_text|>"]
+            )
+            return response["choices"][0]["text"].strip()
+        except Exception as e:
+            return f"Error: {e}"
+
+    def _format_prompt(self, user_query, system_prompt):
+        """Llama-3.2 strict formatting."""
+        return (
             f"<|start_header_id|>system<|end_header_id|>\n\n"
             f"{system_prompt}<|eot_id|>"
             f"<|start_header_id|>user<|end_header_id|>\n\n"
             f"{user_query}<|eot_id|>"
             f"<|start_header_id|>assistant<|end_header_id|>\n\n"
         )
-        
-        try:
-            response = self.llm(
-                prompt,
-                max_tokens=600,
-                temperature=temperature,
-                stop=["<|eot_id|>", "<|end_of_text|>"],
-                echo=False
-            )
-            return response["choices"][0]["text"].strip()
-        except Exception as e:
-            print(f"❌ Generation Error: {e}")
-            return "Error generating response."
 
-# Singleton Instance
+# Global singleton instance
 engine = LLMEngine()

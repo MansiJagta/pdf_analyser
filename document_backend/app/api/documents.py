@@ -14,6 +14,7 @@ from app.models.qa_model import QA
 from app.utils.local_user import get_or_create_local_user
 from app.services.document_processor import process_document
 from app.ai.llm import engine
+from fastapi.responses import StreamingResponse
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
@@ -181,65 +182,70 @@ async def get_document_summary(doc_id: int, db: Session = Depends(get_db)):
 # ==============================
 # Ask Question
 # ==============================
+from fastapi.responses import StreamingResponse
+from datetime import datetime
+import json
+
 @router.post("/{doc_id}/ask")
-async def ask_question(doc_id: int, payload: QuestionRequest, db: Session = Depends(get_db)):
+async def ask_question(
+    doc_id: int, 
+    payload: QuestionRequest, 
+    db: Session = Depends(get_db)
+):
     # 1. Fetch the document
     doc = db.query(Document).filter(Document.id == doc_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    # 2. Check status
+    # 2. Check status for readiness
     if doc.status in ["uploaded", "processing"]:
         return {
-            "id": None,
             "status": doc.status,
-            "answer": "I am still reading and summarizing your PDF. Please wait a moment.",
-            "is_ready": False,
-            "progress_tip": "Check back in 30-60 seconds."
+            "answer": "I am still reading your PDF. Please wait...",
+            "is_ready": False
         }
     
     if doc.status == "failed":
-        return {
-            "id": None,
-            "status": "failed",
-            "answer": "I encountered an error while processing this document. Try re-uploading.",
-            "is_ready": False
-        }
+        raise HTTPException(status_code=400, detail="Document processing failed. Re-upload.")
 
-    # 3. AI Generation
-    context = doc.content_summary if doc.content_summary else "Context not available."
+    # 3. Setup AI Context (Optimized for 8GB RAM)
+    # Truncate summary to 700 chars to ensure it fits in the 1024 token window
+    context = doc.content_summary[:700] if doc.content_summary else "Context not available."
     
     system_prompt = (
-        "You are a helpful AI assistant. Use the following document context "
-        "to answer the user's question.\n\n"
-        f"Context: {context}"
+        f"You are a helpful assistant. Use this context to answer: {context}"
     )
 
-    try:
-        answer = engine.generate(user_query=payload.question, system_prompt=system_prompt)
-    except Exception as e:
-        print(f"❌ AI Generation Error: {e}")
-        answer = "I'm sorry, I had trouble generating an answer right now."
+    # 4. Define the Streaming Generator
+    # Fixed: Removed parameters to avoid 'TypeError' when calling event_generator()
+    async def event_generator():
+        full_answer = ""
+        try:
+            # Accessible via closure: payload.question and system_prompt
+            for token in engine.stream(user_query=payload.question, system_prompt=system_prompt):
+                full_answer += token
+                yield token 
 
-    # 4. Save to History
-    qa = QA(
-        document_id=doc.id,
-        question=payload.question,
-        answer=answer,
-        asked_at=datetime.utcnow()
-    )
-    db.add(qa)
-    db.commit()
-    db.refresh(qa)
+            # 5. Save to History AFTER the stream completes
+            from app.db.session import SessionLocal
+            with SessionLocal() as history_db:
+                qa = QA(
+                    document_id=doc.id,
+                    question=payload.question,
+                    answer=full_answer,
+                    asked_at=datetime.utcnow()
+                )
+                history_db.add(qa)
+                history_db.commit()
+        except Exception as e:
+            # Log the actual error for debugging
+            print(f"❌ Ask Route Error: {str(e)}")
+            yield f"\n[Error: {str(e)}]"
 
-    return {
-        "id": qa.id,
-        "status": "processed",
-        "is_ready": True,
-        "question": qa.question,
-        "answer": qa.answer,
-        "asked_at": str(qa.asked_at)
-    }
+    # 6. Return StreamingResponse
+    # Changed media_type to 'text/event-stream' for better browser/Swagger support
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
 
 # ==============================
 # Process Document (Manual Trigger)
