@@ -15,3 +15,13 @@ pydantic-settings
 # File Uploads
 # =========================
 python-multipart
+
+# =========================
+# AI & LangChain
+# =========================
+langchain-ollama
+langchain
+langchain-community
+langchain-text-splitters
+langgraph
+python-dotenv

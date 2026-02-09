@@ -24,8 +24,8 @@ def node_generate_draft(state):
     persona_prompt = PERSONAS.get(persona_key, "Summarize this document clearly.")
     
     # Grab context from extracted text
-    # 📉 Reduced to 2500 chars (~600 tokens) to ensure prompt fit in 800 token limit
-    source_text = state.get('raw_text', '')[:2500]
+    # 📉 Reduced to 800 chars (approx 200 tokens) for strict constraint adherence
+    source_text = state.get('raw_text', '')[:800]
     
     # Dynamic Temperature: Lower (0.1) for CTO/Architect, slightly higher for others
     temp_map = {"cto": 0.1, "software_architect": 0.1, "product_manager": 0.3}

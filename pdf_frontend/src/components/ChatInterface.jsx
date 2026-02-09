@@ -114,7 +114,7 @@ export default function ChatInterface({ docName, selectedPersona }) {
             {/* Messages */}
             <div
                 ref={scrollRef}
-                className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth bg-[url('/noise.png')] bg-opacity-5"
+                className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth bg-opacity-5"
             >
                 <AnimatePresence initial={false}>
                     {messages.map((msg) => (

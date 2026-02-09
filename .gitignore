@@ -1,67 +1,44 @@
-# node_modules
-
-# # Environments
-# .venv/
-# venv/
-# env/
-# ENV/
-
-# # Python cache
-# __pycache__/
-# *.pyc
-
-# # Distribution / build
-# dist/
-# build/
-
-
-
-
-
-
-
-
-
-
-# --- Frontend (Node.js) ---
-node_modules/
-dist/
-build/
+# --- System Files ---
 .DS_Store
+*.exe
+*.dll
+*.so
 
-# --- Python Environments & Caches ---
+# --- Environments & Dependencies ---
+node_modules/
 .venv/
 venv/
 env/
 ENV/
+
+# --- Python Cache ---
 __pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
 
-# --- Local AI Models (GGUF & Assets) ---
-# We ignore these because they are several GBs in size
-models/assets/*.gguf
-models/assets/*.pt
-models/assets/*.onnx
+# --- Build & Output (React/Antigravity) ---
+dist/
+build/
+.langgraph_api/
 
-# --- Database & State (IMPORTANT) ---
-# Ignore the SQLite databases that store your document vectors and graph state
+# --- AI Engines & Models (Large Binaries) ---
+# This ignores the heavy libraries causing your error
+**/engine/
+**/ollama.exe
+**/lib/
+*.gguf
+models/assets/
+sha256-*
+
+# --- Database & Config ---
 *.db
 *.sqlite
 *.sqlite-journal
-
-# --- LangGraph & System ---
-.langgraph_api/
+.env
 .vscode/
 .idea/
-.env
 
-# --- Project Specific Logs ---
+# --- Logs ---
 *.log
 pip-log.txt
-.venv/
-__pycache__/
-*.gguf
-models/assets/*.gguf
-.env

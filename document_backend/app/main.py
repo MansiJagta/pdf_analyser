@@ -10,14 +10,24 @@ import app.models.profile_model
 # Create tables
 Base.metadata.create_all(bind=engine)
 
+from contextlib import asynccontextmanager
+from app.core.engine_manager import start_ollama_engine
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: specific order matters
+    print("--- 🚀 BACKEND STARTING UP ---")
+    start_ollama_engine() # 1. Ensure AI is running or try to start it
+    init_db()             # 2. Ensure DB is ready
+    yield
+    # Shutdown logic (if any)
+    print("--- 🛑 BACKEND SHUTTING DOWN ---")
+
 app = FastAPI(
     title="Offline AI PDF Analyser",
-    version="0.1.0"
+    version="0.1.0",
+    lifespan=lifespan
 )
-
-@app.on_event("startup")
-def on_startup():
-    init_db()
 
 app.include_router(
     documents.router,

@@ -104,8 +104,6 @@ export default function AskQuestion() {
             const aiMsg = {
                 id: Date.now() + 1,
                 role: "ai",
-                id: Date.now() + 1,
-                role: "ai",
                 content: `[${persona.name} Perspective]: Based on your query about ${doc.name}, here is a tailored response. In a real application, I would use the ${persona.name} system prompt to analyze the vector embeddings.`
             };
             setMessages(prev => [...prev, aiMsg]);

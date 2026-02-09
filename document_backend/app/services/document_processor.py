@@ -411,7 +411,7 @@ async def process_document(document_id: int):
         initial_state = {
             "file_path": doc.path, 
             "persona": "executive",
-            "raw_text":cleaned_text[:1000] , # 📉 Truncate to first 2000 chars for summary speed
+            "raw_text":cleaned_text[:800] , # 📉 HARD TRUNCATION: 800 chars (~200 tokens)
             "layout_type": "",
             "vector_status": "pending",
             "query": "Summarize this document",
