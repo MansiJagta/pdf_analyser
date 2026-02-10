@@ -222,7 +222,8 @@ async def ask_question(
         full_answer = ""
         try:
             # Accessible via closure: payload.question and system_prompt
-            for token in engine.stream(user_query=payload.question, system_prompt=system_prompt):
+            model = os.getenv("AI_MODEL_NAME", "gemma3:4b")
+            for token in engine.stream(user_query=payload.question, system_prompt=system_prompt,model_name=model):
                 full_answer += token
                 yield token 
 
