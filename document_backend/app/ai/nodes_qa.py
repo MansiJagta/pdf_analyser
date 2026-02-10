@@ -40,8 +40,8 @@
 
 from app.ai.state_qa import QAState
 from app.ai.embeddings import query_vector_logic 
-from app.ai.llm import LLMEngine
-engine = LLMEngine(model_path="assets/llama-3.2-3B-Instruct-QA-Q4_K_M.gguf")
+from app.ai.llm import engine
+# engine = LLMEngine(...) # Removed local instantiation
 
 def node_retrieve(state: QAState):
     """Retrieves relevant facts from the local vector DB."""
@@ -96,9 +96,10 @@ def node_reflect_qa(state: QAState):
         f"AI ANSWER: {state['answer']}"
     )
     
+    # Updated call signature for Ollama wrapper
     critique = engine.generate(audit_user_content, audit_system_prompt, temperature=0.1)
     
-    # Clean up output in case model adds extra text
+    # Clean up output
     clean_critique = "REWRITE" if "REWRITE" in critique.upper() else "NO_ERRORS"
     
     return {"critique": clean_critique}

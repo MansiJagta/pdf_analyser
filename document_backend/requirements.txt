@@ -25,3 +25,5 @@ langchain-community
 langchain-text-splitters
 langgraph
 python-dotenv
+sentence-transformers
+sqlite-vec

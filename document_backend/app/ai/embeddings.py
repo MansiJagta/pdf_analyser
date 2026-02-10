@@ -66,75 +66,84 @@
 
 import sqlite3
 import struct
-import sqlite_vec
+import numpy as np
+import pickle
 from sentence_transformers import SentenceTransformer
 from langchain.tools import tool
 
-# Initialize model globally to avoid reloading in every tool call
-# all-MiniLM-L6-v2 produces 384-dimensional vectors
+# Initialize model globally
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-def serialize_f32(vector):
-    """Serializes a list of floats into a compact raw bytes format for sqlite-vec."""
-    return struct.pack(f"{len(vector)}f", *vector)
-
 def get_db_connection(db_path="document_vectors.db"):
-    """Creates a connection and loads the sqlite-vec extension."""
+    """Creates a standard SQLite connection."""
     conn = sqlite3.connect(db_path)
-    conn.enable_load_extension(True)
-    sqlite_vec.load(conn)
-    conn.enable_load_extension(False)
     return conn
 
 @tool("vector_indexer")
 def index_vector_logic(text: str):
-    """Converts text to embeddings and stores them in local SQLite-vec virtual table."""
+    """Converts text to embeddings and stores them in local SQLite database (standard table)."""
     # Generate embedding
-    embeddings = model.encode([text])[0]
-    serialized_vector = serialize_f32(embeddings)
+    embedding = model.encode([text])[0]
+    # Serialize as numpy bytes
+    embedding_blob = embedding.tobytes()
     
     conn = get_db_connection()
     try:
-        # Create virtual table if it doesn't exist (384 dimensions for all-MiniLM-L6-v2)
-        conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS vec_index USING vec0(embedding float[384])")
-        conn.execute("CREATE TABLE IF NOT EXISTS metadata (id INTEGER PRIMARY KEY, content TEXT)")
+        # Standard table: id, content, embedding_blob
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS document_chunks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                content TEXT,
+                embedding BLOB
+            )
+        ''')
         
-        # Insert metadata and vector
         cur = conn.cursor()
-        cur.execute("INSERT INTO metadata (content) VALUES (?)", [text])
-        doc_id = cur.lastrowid
-        cur.execute("INSERT INTO vec_index (rowid, embedding) VALUES (?, ?)", [doc_id, serialized_vector])
-        
+        cur.execute("INSERT INTO document_chunks (content, embedding) VALUES (?, ?)", [text, embedding_blob])
         conn.commit()
-        return f"Successfully indexed chunk {doc_id} in local vector store."
+        return f"Successfully indexed chunk in local store."
     finally:
         conn.close()
 
 @tool("vector_retriever")
 def query_vector_logic(query: str):
     """
-    Member 4 Tool: Converts a user question into a vector and finds 
-    the top 5 most relevant text chunks from the indexed PDF.
+    Finds top 5 relevant chunks using numpy cosine similarity.
     """
     # 1. Generate query embedding
-    query_vector = model.encode([query])[0]
-    serialized_query = serialize_f32(query_vector)
+    query_vec = model.encode([query])[0]
     
     conn = get_db_connection()
     try:
-        # 2. Perform k-Nearest Neighbor (KNN) search
-        # We join with metadata to get the actual text content back
-        query_sql = """
-            SELECT m.content, v.distance 
-            FROM vec_index v
-            JOIN metadata m ON v.rowid = m.id
-            WHERE v.embedding MATCH ? AND k = 5
-            ORDER BY v.distance
-        """
-        results = conn.execute(query_sql, [serialized_query]).fetchall()
+        # 2. Fetch all chunks (naive but fast for single PDF)
+        cur = conn.execute("SELECT content, embedding FROM document_chunks")
+        rows = cur.fetchall()
         
-        # Combine results into a single context string
-        context = "\n---\n".join([row[0] for row in results])
-        return context if context else "No relevant context found in the document."
+        if not rows:
+            return "No content indexed."
+            
+        # 3. Compute similarities in memory
+        scores = []
+        for content, emb_blob in rows:
+            # Load vector
+            doc_vec = np.frombuffer(emb_blob, dtype=np.float32)
+            
+            # Cosine similarity
+            norm_q = np.linalg.norm(query_vec)
+            norm_d = np.linalg.norm(doc_vec)
+            if norm_q == 0 or norm_d == 0:
+                score = 0
+            else:
+                score = np.dot(query_vec, doc_vec) / (norm_q * norm_d)
+            
+            scores.append((score, content))
+            
+        # 4. Sort and return top 5
+        scores.sort(key=lambda x: x[0], reverse=True)
+        top_k = scores[:5]
+        
+        # Combine results
+        context = "\n---\n".join([item[1] for item in top_k])
+        return context if context else "No relevant context found."
     finally:
         conn.close()
